@@ -1,6 +1,27 @@
 const express = require("express");
 const router = express.Router();
 const { readUsers, writeUsers } = require("./userOperations");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
+router.post("/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const users = readUsers();
+    const user = users.find((u) => u.username === username);
+
+    if (!user || !bcrypt.compareSync(password, user.password)) {
+      return res.status(401).send({ error: "Invalid credentials" });
+    }
+
+    const token = jwt.sign({ userId: user.id }, "your_secret_key", {
+      expiresIn: "1h",
+    });
+    res.json({ token });
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 router.get("/", (req, res) => {
   try {
@@ -24,6 +45,8 @@ router.get("/:id", (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+ 
 
 router.post("/", (req, res) => {
   try {
